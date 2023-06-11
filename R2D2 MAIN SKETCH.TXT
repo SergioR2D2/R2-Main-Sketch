@@ -1,11 +1,17 @@
 /*  
     Arduino DC Motor Control - PWM | H-Bridge DROKK PWM Driver |  controlled by PS3 Navigation Move Controller
     
+    
     This version is working with PS3 Navigation Controller and DROKK PWM, Emergency Stop action added when pressing PS button
+    
+    Also in this version, I have added a live battery voltage meter as well as a temperature probe for 2 onboard battery pack
 
-    Adding multipe button actions from the PS3 remote to turn on different output on the MEGA
+    Multipe combined button actions from the PS3 remote can be modify to turn on different outputs on the MEGA such as 
+    
+    triggering mp3 players and/or triggering random servos actions
 
     Adding HEX serial write commands for MP3 player control
+    
 */
     
 #define up 22    // output pins for droid action to be programmed later on 
@@ -30,7 +36,7 @@
 #define in6 49   // dome reverse signal
 #define domet 25 // dome relay for default position motor
 
-#define Relay 23 // relay output to disconnect the entire system from the battery to prevent low battery damage
+#define Relay 23 // relay output to disconnect the entire system when the PS button is being press(output goes high)
 #define Capcharge 27 // output to initially charge the voltage sense capacitor to reduce waiting time when booting up
 
 int Vbatt= A2; // analog pin to sense the voltage of the running battery for low cutoff option
@@ -62,7 +68,7 @@ LiquidCrystal_I2C lcd(0x27,20,4); // set the LCD address to 0x27 for a 16 chars 
 #include <SoftwareSerial.h>
 SoftwareSerial pwm (19, 18);  // Rx, Tx to send serial command to MP3 Player
 
-byte File1[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x01,0xEF}; //Hex format commands to be sent to dfplayer mini
+byte File1[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x01,0xEF}; //Hex commands to be sent to dfplayer mini for songs selection
 byte File2[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x02,0xEF};
 byte File3[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x03,0xEF};
 byte File4[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x04,0xEF};
@@ -84,12 +90,12 @@ byte File19[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x13,0xEF};
 byte File20[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x14,0xEF};
 byte File21[] = {0x7E,0xFF,0x06,0x0F,0x00,0x01,0x15,0xEF};
 
-byte Vol01[] = {0x7E,0xFF,0x06,0x06,0x00,0x00,0x01,0xEF}; //Hex format commands to be sent to dfplayer mini
+byte Vol01[] = {0x7E,0xFF,0x06,0x06,0x00,0x00,0x01,0xEF}; //Various preset volume settings 
 byte Vol12[] = {0x7E,0xFF,0x06,0x06,0x00,0x00,0x0C,0xEF};
 byte Vol30[] = {0x7E,0xFF,0x06,0x06,0x00,0x00,0x1E,0xEF};
 
-byte VolUP[] = {0x7E,0xFF,0x06,0x04,0x00,0x00,0x00,0xEF}; //Hex format commands to be sent to dfplayer mini
-byte VolDN[] = {0x7E,0xFF,0x06,0x05,0x00,0x00,0x00,0xEF};
+byte VolUP[] = {0x7E,0xFF,0x06,0x04,0x00,0x00,0x00,0xEF}; //Volume up serial command
+byte VolDN[] = {0x7E,0xFF,0x06,0x05,0x00,0x00,0x00,0xEF}; //Volume down serial command
 byte MusPd[] = {0x7E,0xFF,0x06,0x0E,0x00,0x00,0x00,0xEF}; //To pause the current mp3 track playing
 USB Usb;
 BTD Btd(&Usb);
@@ -115,9 +121,9 @@ void setup()
     pinMode(domet, OUTPUT); // dome trigger signal to return to default position
     
     pinMode(up, OUTPUT);  // set of pins output for various droid actions to be programmed later on
-    pinMode(down, OUTPUT);
-    pinMode(left, OUTPUT);
-    pinMode(right, OUTPUT);
+    pinMode(down, OUTPUT);  // not used at the moment
+    pinMode(left, OUTPUT);  // not used at the moment
+    pinMode(right, OUTPUT);  // not used at the moment
     pinMode(cross, OUTPUT);  // not used at the moment
   
     pinMode(l1, OUTPUT);  // pin output for various droid action to be programmed later on
@@ -127,7 +133,7 @@ void setup()
 
     lcd.init();          // initialize the lcd 
     lcd.backlight();
-    Serial.begin(9600);  // using this speed for now because of the LCD default connection speed (would like to use 57600 instead)
+    Serial.begin(9600);  // using this speed for now to match the LCD default connection speed
  
     pwm.begin(9600);     // set at this rate to communicate with the MP3 default baud
 
@@ -165,6 +171,7 @@ void loop()
     static unsigned long CircleButtonPressedTime;
 
     readVal=analogRead(Vbatt); // will read the voltage of batt1 from the resistance divider circuit (from 0 to 15V converting to 0 to 5V)
+    
     V2=(17./1026.)*readVal; // to be set according to the voltage limit I want for the li ion
 
     Vo1 = analogRead(ThermistorBatt1); // This section is for the temperature reading of both battery packs
@@ -236,7 +243,9 @@ void loop()
     // Convert the declining X-axis readings from 100 to 0 into increasing 0 to 255 value
     
     int xMapped = map(xAxis, 100, 0, 0, 255);
+    
     // Move to left - decrease left motor speed, increase right motor speed
+    
     motorSpeedA = motorSpeedA - xMapped;
     motorSpeedB = motorSpeedB + xMapped;
     
