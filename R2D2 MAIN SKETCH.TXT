@@ -1,7 +1,7 @@
 /*  
-    Arduino DC Motor Control - PWM | H-Bridge |  controlled by PS3 Navigation Move Controller
+    Arduino DC Motor Control - PWM | H-Bridge DROKK PWM Driver |  controlled by PS3 Navigation Move Controller
     
-    Modified version in progress, working with PS3 Navigation Controller and DROKK PWM, Emergency Stop action added when pressing PS button
+    This version is working with PS3 Navigation Controller and DROKK PWM, Emergency Stop action added when pressing PS button
 
     Adding multipe button actions from the PS3 remote to turn on different output on the MEGA
 
@@ -275,19 +275,6 @@ void loop()
 }
 }
 
-  
-    // Prevent buzzing at low speeds (Adjust according to your motors. Motors couldn't start moving if PWM value was below value of 70)
- 
-    // if (motorSpeedA < 70) 
-    // {
-    //  motorSpeedA = 0;
-    // }
-    // if (motorSpeedB < 70) 
-    // {
-    // motorSpeedB = 0;
-    // }
-
- 
     analogWrite(enA, motorSpeedA); // Send PWM signal to motor A
    
     analogWrite(enB, motorSpeedB); // Send PWM signal to motor B
