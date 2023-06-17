@@ -7,7 +7,7 @@
     
     My own version in progress, working with PS3 Navigation Controller, DFPlayer mini, LCD Screen and DROKK PWM
 
-    This sketch have 2 void loops, one for the owner and one for any guess who would like to try my R2, reducing all speeds and limiting options
+    This sketch have 2 void loops, one for the owner and one for any guess who would like to try my R2, reducing all speeds ans limiting options
     
     Mapping X, Y and D axis from the PS3 to PWM output for the foot and dome output control to 12V motors
     
@@ -19,10 +19,11 @@
     
     Voltage sense pin added to read the actual voltage of the battery being used (using a resistance divider circuit to reduce from 16V to 5V)
     
-    Capcharge pin sending 5V to the voltage capacitor sense circuit to reduce wait time when powering up the Droid
+    Capcharge pin sending 5V to the voltage capacitor sense circuit at the startup to reduce wait time when powering up the Droid
     
     Thermometer probe pins added to read the temperature in real time of both onboard battery packs (10k thermistor in series with a 10k resistor)
 
+   *** If using the PWM to Analog output, use a 10K resistor from the EN1 and EN2 to a 33uF cap, that will go from 0 to 4.9 smoothly ***
 */
     
 #define up 22    // output pins for droid action to be programmed later on 
@@ -42,7 +43,7 @@
 #define in3 48 // right forward signal
 #define in4 43 // right reverse signal (re assigning from pin 50 to 43) now working
 
-#define dome 45  // dome rotation PWM speed control change from pin 45 to pin 11 to test the new PWM Frequency
+#define dome 2  // dome rotation PWM speed control change from pin 45 to pin 2 to bypass the new PWM Frequency
 #define in5 47   // dome forward signal
 #define in6 49   // dome reverse signal
 #define domet 25 // dome relay for default position motor
@@ -110,7 +111,6 @@ byte Vol30[] = {0x7E,0xFF,0x06,0x06,0x00,0x00,0x1E,0xEF};
 byte VolUP[] = {0x7E,0xFF,0x06,0x04,0x00,0x00,0x00,0xEF}; //Hex format commands to be sent to dfplayer mini
 byte VolDN[] = {0x7E,0xFF,0x06,0x05,0x00,0x00,0x00,0xEF};
 byte MusPd[] = {0x7E,0xFF,0x06,0x0E,0x00,0x00,0x00,0xEF}; //To pause the current mp3 track playing
-
 USB Usb;
 BTD Btd(&Usb);
 PS3BT PS3(&Btd);
@@ -121,7 +121,8 @@ void setup()
 
 {
 
-    TCCR5B = TCCR5B & B11111000 | B00000001;  // for setting a PWM frequency of 31372.55 Hz for pin 44,45,46
+    
+    TCCR5B = TCCR5B & B11111000 | B00000001;  // for PWM frequency of 31372.55 Hz for pin 44,45,46
   
     pinMode(enA, OUTPUT); //PWM output motor 1
     pinMode(in1, OUTPUT); //direction of motor 1
@@ -145,13 +146,13 @@ void setup()
     pinMode(l1, OUTPUT);  // pin output for various droid action to be programmed later on
     pinMode(l3, OUTPUT);  // pin output for various droid action to be programmed later on
     pinMode(Relay, OUTPUT); // relay output to disconnect the entire system, goes HIGH when PS pressed
-    pinMode(Capcharge, OUTPUT); // +5V to recharge the voltage sense capacitor to reduce wait time at startup
+    pinMode(Capcharge, OUTPUT); // set that pin as an output to fast recharge the voltage sense capacitor to reduce wait time
 
     pinMode(User, INPUT_PULLUP); // set the pin as input with pull up resistor active for default high state
 
     lcd.init();          // initialize the lcd 
     lcd.backlight();
-    Serial.begin(9600);  // using for now to match the LCD default connection speed (would like to use 57600 instead)
+    Serial.begin(9600);  // using this speed for now because of the LCD default connection speed (would like to use 57600 instead)
  
     pwm.begin(9600);     // set at this rate to communicate with the MP3 default baud
 
@@ -200,7 +201,7 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     static unsigned long CircleButtonPressedTime;
 
     readVal=analogRead(Vbatt); // will read the voltage of batt1 from the resistance divider circuit (from 0 to 15V converting to 0 to 5V)
-    V2=(17./1026.)*readVal; // to be set according to the voltage limit I want for the li-ion
+    V2=(17./1026.)*readVal; // to be set according to the voltage limit I want for the li ion
 
     Vo1 = analogRead(ThermistorBatt1); // This section is for the temperature reading of both battery packs
     Vo2 = analogRead(ThermistorBatt2);
@@ -309,19 +310,6 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     motorSpeedB = 0;
 }
 }
-
-  
-    // Prevent buzzing at low speeds (Adjust according to your motors. Motors couldn't start moving if PWM value was below value of 70) no need of this section for now, no buzzing occuring
- 
-    // if (motorSpeedA < 70) 
-    // {
-    //  motorSpeedA = 0;
-    // }
-    // if (motorSpeedB < 70) 
-    // {
-    // motorSpeedB = 0;
-    // }
-
  
     analogWrite(enA, motorSpeedA); // Send PWM signal to motor A
    
@@ -343,14 +331,14 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     lcd.print("REMOTE CONNECTED");
     pwm.write(File16,sizeof(File16)); // MP3 sound confirming that the PS3 Navigation remote have been connected
     delay(6000);
-    Serial.println();
-    Serial.println("Current Battery voltage");
-    Serial.println(String("is at ") + V2 + " Volt");
-    lcd.clear();
-    lcd.print("Current Battery");
-    lcd.setCursor(0, 1);
-    lcd.print(String("is at ") + V2 + " Volt"); 
-    delay(4000);
+    //Serial.println();
+    //Serial.println("Current Battery voltage");
+    //Serial.println(String("is at ") + V2 + " Volt");
+    //lcd.clear();
+    //lcd.print("Current Battery");
+    //lcd.setCursor(0, 1);
+    //lcd.print(String("is at ") + V2 + " Volt"); 
+    //delay(4000);
     Serial.print("Bat1 Temperature is "); 
     Serial.print(Tc1);
     Serial.print("C ");
@@ -417,8 +405,8 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     pwm.write(File17,sizeof(File17)); // MP3 sound of Droid shutting down
     delay(3000); // so we can see on the display that the droid will be shutting down
     digitalWrite(Relay, HIGH);
-    // delay(1000);
-    // resetFunc(); // not sure if I need this since the relay goes high and turn off the entire system 
+    delay(1000);
+    resetFunc(); // not sure if I need this since the relay goes high and turn off the entire system 
 }
 
   if (dAxis > 10)
@@ -476,7 +464,7 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     lcd.print("L1+CROSS= FILE 7");
 } 
 
-  if (PS3.getButtonPress(L1) && PS3.getButtonClick(CIRCLE)) // Play file 8 of R2 BAR MUSIC XAXOPHONE
+  if (PS3.getButtonPress(L1) && PS3.getButtonClick(CIRCLE)) // Play file 8 of R2 BAR MUSIC XAXOPHONE EPISODE 1
 {
     pwm.write(File8,sizeof(File8));
     delay(50);
@@ -548,7 +536,7 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     lcd.print("L1+L3= FILE 9");
 }
 
-  if (PS3.getButtonPress(L2) && PS3.getButtonClick(L3)) // Play file 20 of R2 intermittent mix noise for 90 seconds
+  if (PS3.getButtonPress(L2) && PS3.getButtonClick(L3)) // Play file 20 of R2 intermittent noise for 90 seconds
 {
     pwm.write(File20,sizeof(File20));
     delay(50);
@@ -662,12 +650,12 @@ void loop1() // Defaut Owner mode with full power on Foot Drive and Dome
     //Set Motor B backward
     digitalWrite(in3, HIGH);
     digitalWrite(in4, LOW);
-    analogWrite(enA, 80);  // to be set for static look
-    analogWrite(enB, 80);  // to be set for static look
+    analogWrite(enA, 160);
+    analogWrite(enB, 160);
     digitalWrite(in5, LOW);  //set the dome direction on the opposite of the spin direction for Dome static look
     digitalWrite(in6, HIGH);
     analogWrite(dome, 255);  // Send PWM signal to spin the dome as well, to be adjusted so the Dome look it is static
-    delay(5000);
+    delay(5550);
     analogWrite(enA, 0);    // stop the spinning of both the Foot Drive and the Dome after the 5 seconds 
     analogWrite(enB, 0);
     analogWrite(dome, 0);
@@ -750,8 +738,8 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     
     // Convert the declining Y-axis readings for going backward from 128 to 0 into 0 to 255 value for the motor PWM signal
       
-    motorSpeedA = map(yAxis, 128, 0, 0, 75); // guess mode limitation
-    motorSpeedB = map(yAxis, 128, 0, 0, 75); // guess mode limitation
+    motorSpeedA = map(yAxis, 128, 0, 0, 175); // guess mode limitation
+    motorSpeedB = map(yAxis, 128, 0, 0, 175); // guess mode limitation
      
 }
 
@@ -768,8 +756,8 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     // Convert the increasing Y-axis readings for going forward from 150 to 255 into 0 to 255 value for the motor PWM signal
     
     
-    motorSpeedA = map(yAxis, 150, 255, 0, 75); // guess mode limitation
-    motorSpeedB = map(yAxis, 150, 255, 0, 75); // guess mode limitation
+    motorSpeedA = map(yAxis, 150, 255, 0, 175); // guess mode limitation
+    motorSpeedB = map(yAxis, 150, 255, 0, 175); // guess mode limitation
 }
   
     // If joystick stays in middle the motors are not moving
@@ -786,7 +774,7 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
 {
     // Convert the declining X-axis readings from 100 to 0 into increasing 0 to 255 value
     
-    int xMapped = map(xAxis, 100, 0, 0, 75); // guess mode limitation
+    int xMapped = map(xAxis, 100, 0, 0, 175); // guess mode limitation
     // Move to left - decrease left motor speed, increase right motor speed
     motorSpeedA = motorSpeedA - xMapped;
     motorSpeedB = motorSpeedB + xMapped;
@@ -807,7 +795,7 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     
     // Convert the increasing X-axis readings from 160 to 255 into 0 to 255 value
     
-    int xMapped = map(xAxis, 160, 255, 0, 75); // guess mode limitation
+    int xMapped = map(xAxis, 160, 255, 0, 175); // guess mode limitation
     
     // Move right - decrease right motor speed, increase left motor speed
     
@@ -825,18 +813,6 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     motorSpeedB = 0;
 }
 }
-
-  
-    // Prevent buzzing at low speeds (Adjust according to your motors. Motors couldn't start moving if PWM value was below value of 70)
- 
-    // if (motorSpeedA < 70) 
-    // {
-    //  motorSpeedA = 0;
-    // }
-    // if (motorSpeedB < 70) 
-    // {
-    // motorSpeedB = 0;
-    // }
 
  
     analogWrite(enA, motorSpeedA); // Send PWM signal to motor A
@@ -859,14 +835,14 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     lcd.print("REMOTE CONNECTED");
     pwm.write(File16,sizeof(File16)); // MP3 sound confirming that the PS3 Navigation remote have been connected
     delay(6000);
-    Serial.println();
-    Serial.println("Current Battery voltage");
-    Serial.println(String("is at ") + V2 + " Volt");
-    lcd.clear();
-    lcd.print("Current Battery");
-    lcd.setCursor(0, 1);
-    lcd.print(String("is at ") + V2 + " Volt"); 
-    delay(4000);
+    //Serial.println();
+    //Serial.println("Current Battery voltage");
+    //Serial.println(String("is at ") + V2 + " Volt");
+    //lcd.clear();
+    //lcd.print("Current Battery");
+    //lcd.setCursor(0, 1);
+    //lcd.print(String("is at ") + V2 + " Volt"); 
+    //delay(4000);
     Serial.print("Bat1 Temperature is "); 
     Serial.print(Tc1);
     Serial.print("C ");
@@ -933,8 +909,8 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
     pwm.write(File17,sizeof(File17)); // MP3 sound of Droid shutting down
     delay(3000); // so we can see on the display that the droid will be shutting down
     digitalWrite(Relay, HIGH);
-    // delay(1000);
-    // resetFunc(); // not sure if I need this since the relay goes high and turn off the entire system 
+    delay(1000);
+    resetFunc(); // not sure if I need this since the relay goes high and turn off the entire system 
 }
 
   if (dAxis > 10)
@@ -1171,6 +1147,8 @@ void loop2() // Guess mode, this will limit the speed of the Foot Drive and Dome
  pwm.write(File18,sizeof(File18)); // spinning around MP3 file 
     Serial.println("SPIN AROUND NOT ALLOWED IN GUESS MODE");
     lcd.clear();
+    lcd.print("SPIN AROUND");
+    lcd.setCursor(0, 1);
     lcd.print("NOT ALLOWED");
     // Set Motor A forward
     //digitalWrite(in1, LOW);
